@@ -1,0 +1,13 @@
+repeat task.wait()until game:IsLoaded()
+local _1="https://script.google.com/macros/s/AKfycbwJt9VAlmA6kM_AW7jLyZxWxsI-8frUXfAKi-rEFHBjZO-D7IkdAx1f9NWee8pynMYE/exec"
+local _2="bot-farm"
+local _3=game:GetService("HttpService")local _4=game:GetService("TeleportService")local _5=game:GetService("Players")local _6=game:GetService("Stats")local _7=_5.LocalPlayer
+local _8=(syn and syn.request)or(http and http.request)or http_request or(fluxus and fluxus.request)or request
+local function _9()local a=0;pcall(function()a=math.floor(_6.Network.ServerStatsItem["Data Ping"]:GetValue())end)return a end
+local function _A(b)if not b then return"0"end;local c=tostring(b):gsub("%D","")return c~=""and c or"0"end
+local function _B()local d=_7:FindFirstChild("PlayerGui")if not d then return"0"end;local e="0"for _,f in pairs(d:GetDescendants())do if(f:IsA("TextLabel")or f:IsA("TextBox"))and f.Visible then local g=f.Text:lower()if string.match(f.Text,"%d")and(g:find("%$")or g:find("balance"))then local h=_A(f.Text)if tonumber(h)>0 then e=h;if f.Parent and f.Parent.Name=="Options"then return h end end end end end return e end
+local function _C(i)local j="0"pcall(function()local k=_7.PlayerGui.Skills.SkillsHolder.SkillsScrollingFrame;for _,l in pairs(k:GetChildren())do if l:FindFirstChild("SkillTitle")then local m=l.SkillTitle.Text;if string.find(m:lower(),i:lower())then j=_A(m)if j=="0"then for _,n in pairs(l:GetDescendants())do if n:IsA("TextLabel")and n.Name~="SkillTitle"and string.match(n.Text,"%d")then j=_A(n.Text)break end end end break end end end end)return j end
+local function _D(o)print("\226\156\136\239\184\143 \225\184\129\225\184\179\225\184\165\225\184\177\225\184\135\225\184\162\225\185\137\225\184\176\225\184\162\225\185\132\225\184\155 Server ID: "..o)_4:TeleportToPlaceInstance(game.PlaceId,o,_7)end
+local function _E()local p=_B()local q=_C("Total Level")local r=_C("Swiper")local s=_C("Farming")local t="0"pcall(function()local u=_7:FindFirstChild("PlayerGui")if u and u.TopRightHud.Holder.Frame.MoneyTextLabel then t=_A(u.TopRightHud.Holder.Frame.MoneyTextLabel.Text)end end)local v={DeviceName=_2,Username=_7.Name,Status="Farming",Money=p,Level=q,Swiper=r,Farming=s,PlayerCount=#_5:GetPlayers(),Ping=_9(),JobId=game.JobId}local w=_3:JSONEncode(v)local x=_8({Url=_1,Method="POST",Headers={["Content-Type"]="application/json"},Body=w})if x and x.StatusCode==200 then local y=_3:JSONDecode(x.Body)if y.command=="hop"and y.jobId then if y.jobId~=game.JobId then _D(y.jobId)end end end end
+task.spawn(function()while task.wait()do for _,z in pairs(_5:GetPlayers())do if z~=_7 then pcall(function()_7:RequestFriendship(z)end)end;task.wait(0.25)end;task.wait(60)end end)
+task.spawn(function()task.wait(60)while true do pcall(_E)task.wait(10)end end)
