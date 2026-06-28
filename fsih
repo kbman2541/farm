@@ -1,0 +1,215 @@
+-- STREAMING_CHUNK:Initializing Services and Variables...
+if not game:IsLoaded() then
+game.Loaded:Wait()
+end
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ==========================================
+-- เคลียร์ UI เก่า (ป้องกันการทับซ้อน)
+-- ==========================================
+local UI_NAME = "AKB_Mini_Hub_UI"
+if CoreGui:FindFirstChild(UI_NAME) then CoreGui[UI_NAME]:Destroy() end
+if LocalPlayer.PlayerGui:FindFirstChild(UI_NAME) then LocalPlayer.PlayerGui[UI_NAME]:Destroy() end
+
+-- ==========================================
+-- ฟังก์ชัน netSend สำหรับเกมนี้ (เพื่อส่งค่าปลา)
+-- ==========================================
+local function netSend(...)
+local Counter
+for _, v in ipairs(getgc(true)) do
+if typeof(v) == "table" and rawget(v, "event") and rawget(v, "func") then
+Counter = v; break
+end
+end
+if not Counter then return end
+local args = { ... }
+Counter.event = (Counter.event or 0) + 1
+local send = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Send")
+if send then send:FireServer(Counter.event, unpack(args)) end
+end
+
+-- STREAMING_CHUNK:Creating the Mini UI layout on the left...
+-- ==========================================
+-- โครงสร้าง UI (จัดไว้ฝั่งซ้าย)
+-- ==========================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = UI_NAME
+ScreenGui.Parent = pcall(function() return CoreGui.Name end) and CoreGui or LocalPlayer.PlayerGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 150)
+MainFrame.Position = UDim2.new(0, 20, 0.5, 0) -- X=20 (ชิดซ้าย), Y=0.5 (ตรงกลางจอ)
+MainFrame.AnchorPoint = Vector2.new(0, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.Text = "🎣 AKB Mini: Fish & Click"
+Title.Parent = MainFrame
+Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 10)
+
+-- ปุ่มพับ/ปิด หน้าต่าง
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 2)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = MainFrame
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+closeBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = MainFrame
+
+-- Spacer เพื่อไม่ให้ปุ่มทับ Title
+local Spacer = Instance.new("Frame")
+Spacer.Size = UDim2.new(1, 0, 0, 30)
+Spacer.BackgroundTransparency = 1
+Spacer.LayoutOrder = 1
+Spacer.Parent = MainFrame
+
+-- STREAMING_CHUNK:Implementing Auto Fish functionality...
+-- ==========================================
+-- 🎣 1. ระบบตกปลาอัจฉริยะ (Auto Fish)
+-- ==========================================
+local autoFishBtn = Instance.new("TextButton")
+autoFishBtn.Size = UDim2.new(0.9, 0, 0, 35)
+autoFishBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+autoFishBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoFishBtn.TextSize = 13
+autoFishBtn.Font = Enum.Font.GothamBold
+autoFishBtn.Text = "🎣 Auto Fish: OFF"
+autoFishBtn.LayoutOrder = 2
+autoFishBtn.Parent = MainFrame
+Instance.new("UICorner", autoFishBtn).CornerRadius = UDim.new(0, 6)
+
+local isAutoFishOn, TargetScreenPos, isFishing, lastChildCount = false, nil, false, 0
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+if isAutoFishOn and not TargetScreenPos then
+if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+TargetScreenPos = input.Position
+autoFishBtn.Text = "🎣 Auto Fish: ON (ทำงานแล้ว)"
+autoFishBtn.BackgroundColor3 = Color3.fromRGB(40, 150, 40)
+end
+end
+end)
+
+autoFishBtn.MouseButton1Click:Connect(function()
+isAutoFishOn = not isAutoFishOn
+if isAutoFishOn then
+TargetScreenPos, isFishing, lastChildCount = nil, false, 0
+autoFishBtn.Text = "⏳ รอคลิกน้ำ 1 ครั้งเพื่อจำจุด"
+autoFishBtn.BackgroundColor3 = Color3.fromRGB(200, 150, 40)
+else
+TargetScreenPos, isFishing = nil, false
+autoFishBtn.Text = "🎣 Auto Fish: OFF"
+autoFishBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+end
+end)
+
+local function triggerRecast()
+if TargetScreenPos then
+task.wait(2)
+VirtualInputManager:SendMouseButtonEvent(TargetScreenPos.X, TargetScreenPos.Y, 0, true, game, 1)
+task.wait(0.1)
+VirtualInputManager:SendMouseButtonEvent(TargetScreenPos.X, TargetScreenPos.Y, 0, false, game, 1)
+end
+end
+
+task.spawn(function()
+while task.wait(0.1) do
+if not MainFrame.Parent then break end
+if isAutoFishOn and TargetScreenPos then
+pcall(function()
+local equippedTool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+if equippedTool then
+-- ส่งคำสั่งบอกเซิร์ฟเวอร์ว่าหมุนรอกตกปลา (Bypass Minigame)
+netSend("reel_ended", equippedTool, true)
+
+                local currentCount = #equippedTool:GetChildren()
+                if currentCount > lastChildCount then 
+                    isFishing = true
+                elseif currentCount < lastChildCount and isFishing then
+                    -- ปลาติดและดึงขึ้นมาแล้ว ให้ขว้างใหม่
+                    isFishing = false
+                    triggerRecast()
+                end
+                lastChildCount = currentCount
+            else
+                if isFishing then isFishing = false; triggerRecast() end
+                lastChildCount = 0
+            end
+        end)
+    end
+end
+
+
+end)
+
+-- STREAMING_CHUNK:Implementing Auto Click functionality...
+-- ==========================================
+-- 🖱️ 2. ระบบออโต้คลิก (Auto Click)
+-- ==========================================
+local autoClickBtn = Instance.new("TextButton")
+autoClickBtn.Size = UDim2.new(0.9, 0, 0, 35)
+autoClickBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+autoClickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoClickBtn.TextSize = 13
+autoClickBtn.Font = Enum.Font.GothamBold
+autoClickBtn.Text = "🖱️ Auto Click: OFF"
+autoClickBtn.LayoutOrder = 3
+autoClickBtn.Parent = MainFrame
+Instance.new("UICorner", autoClickBtn).CornerRadius = UDim.new(0, 6)
+
+local isAutoClickOn = false
+
+autoClickBtn.MouseButton1Click:Connect(function()
+isAutoClickOn = not isAutoClickOn
+if isAutoClickOn then
+autoClickBtn.Text = "🖱️ Auto Click: ON"
+autoClickBtn.BackgroundColor3 = Color3.fromRGB(40, 150, 40)
+else
+autoClickBtn.Text = "🖱️ Auto Click: OFF"
+autoClickBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+end
+end)
+
+task.spawn(function()
+while task.wait(0.05) do -- ความเร็วในการคลิก (คลิกทุกๆ 0.05 วินาที)
+if not MainFrame.Parent then break end
+if isAutoClickOn then
+pcall(function()
+local mousePos = UserInputService:GetMouseLocation()
+-- สั่งจำลองการคลิกเมาส์ซ้ายที่ตำแหน่งเมาส์ปัจจุบัน
+VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, true, game, 1)
+task.wait(0.01)
+VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, false, game, 1)
+end)
+end
+end
+end)
+
+print("✅ โหลดระบบ AKB Mini (Fish & Click) สำเร็จแล้ว!")
