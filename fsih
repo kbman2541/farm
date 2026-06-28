@@ -1,4 +1,3 @@
--- STREAMING_CHUNK:Initializing Services and Variables...
 if not game:IsLoaded() then
 game.Loaded:Wait()
 end
@@ -12,16 +11,10 @@ local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- ==========================================
--- เคลียร์ UI เก่า (ป้องกันการทับซ้อน)
--- ==========================================
 local UI_NAME = "AKB_Mini_Hub_UI"
 if CoreGui:FindFirstChild(UI_NAME) then CoreGui[UI_NAME]:Destroy() end
 if LocalPlayer.PlayerGui:FindFirstChild(UI_NAME) then LocalPlayer.PlayerGui[UI_NAME]:Destroy() end
 
--- ==========================================
--- ฟังก์ชัน netSend สำหรับเกมนี้ (เพื่อส่งค่าปลา)
--- ==========================================
 local function netSend(...)
 local Counter
 for _, v in ipairs(getgc(true)) do
@@ -36,10 +29,6 @@ local send = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.R
 if send then send:FireServer(Counter.event, unpack(args)) end
 end
 
--- STREAMING_CHUNK:Creating the Mini UI layout on the left...
--- ==========================================
--- โครงสร้าง UI (จัดไว้ฝั่งซ้าย)
--- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = UI_NAME
 ScreenGui.Parent = pcall(function() return CoreGui.Name end) and CoreGui or LocalPlayer.PlayerGui
@@ -65,7 +54,6 @@ Title.Text = "🎣 AKB Mini: Fish & Click"
 Title.Parent = MainFrame
 Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 10)
 
--- ปุ่มพับ/ปิด หน้าต่าง
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
 closeBtn.Position = UDim2.new(1, -35, 0, 2)
@@ -83,17 +71,12 @@ UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = MainFrame
 
--- Spacer เพื่อไม่ให้ปุ่มทับ Title
 local Spacer = Instance.new("Frame")
 Spacer.Size = UDim2.new(1, 0, 0, 30)
 Spacer.BackgroundTransparency = 1
 Spacer.LayoutOrder = 1
 Spacer.Parent = MainFrame
 
--- STREAMING_CHUNK:Implementing Auto Fish functionality...
--- ==========================================
--- 🎣 1. ระบบตกปลาอัจฉริยะ (Auto Fish)
--- ==========================================
 local autoFishBtn = Instance.new("TextButton")
 autoFishBtn.Size = UDim2.new(0.9, 0, 0, 35)
 autoFishBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
@@ -169,10 +152,6 @@ end
 
 end)
 
--- STREAMING_CHUNK:Implementing Auto Click functionality...
--- ==========================================
--- 🖱️ 2. ระบบออโต้คลิก (Auto Click)
--- ==========================================
 local autoClickBtn = Instance.new("TextButton")
 autoClickBtn.Size = UDim2.new(0.9, 0, 0, 35)
 autoClickBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
